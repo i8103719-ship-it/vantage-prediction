@@ -1,0 +1,912 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VANTAGE — Prediction Markets</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #080a09;
+            --card: #111512;
+            --card-hover: #171d19;
+            --green: #b6ff65;
+            --green-dark: #83c83e;
+            --text: #f3f5f2;
+            --muted: #858d87;
+            --border: #252c27;
+            --red: #ff6565;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* HEADER */
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0 30px;
+        }
+
+        .logo {
+            font-size: 25px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+        }
+
+        .logo span {
+            color: var(--green);
+        }
+
+        .wallet-button {
+            background: #1b241c;
+            color: var(--green);
+            border: 1px solid #34432f;
+            padding: 11px 17px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* INTRO */
+
+        .intro {
+            margin: 15px 0 28px;
+        }
+
+        .intro-label {
+            color: var(--green);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 13px;
+        }
+
+        .intro h1 {
+            font-size: clamp(32px, 7vw, 55px);
+            line-height: 1.05;
+            letter-spacing: -2px;
+            max-width: 650px;
+            margin-bottom: 15px;
+        }
+
+        .intro h1 span {
+            color: var(--green);
+        }
+
+        .intro p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+            max-width: 450px;
+        }
+
+        /* STATS */
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 15px 12px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 10px;
+            margin-bottom: 9px;
+        }
+
+        .stat-value {
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .stat-value.green {
+            color: var(--green);
+        }
+
+        /* SECTION */
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 35px 0 17px;
+        }
+
+        .section-header h2 {
+            font-size: 19px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-header span {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        /* FILTERS */
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 18px;
+            scrollbar-width: none;
+        }
+
+        .filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-btn {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            border-radius: 30px;
+            background: #151a16;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .filter-btn.active {
+            background: var(--green);
+            border-color: var(--green);
+            color: #10150d;
+        }
+
+        /* MARKET GRID */
+
+        .markets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .market-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            overflow: hidden;
+            transition: 0.2s;
+        }
+
+        .market-card:active {
+            transform: scale(0.98);
+        }
+
+        .market-image {
+            width: 100%;
+            height: 145px;
+            object-fit: cover;
+            display: block;
+            filter: brightness(0.78);
+        }
+
+        .card-content {
+            padding: 14px;
+        }
+
+        .category {
+            display: inline-block;
+            color: var(--green);
+            background: #1b281a;
+            border: 1px solid #2c4027;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            margin-bottom: 11px;
+        }
+
+        .market-question {
+            font-size: 14px;
+            line-height: 1.45;
+            font-weight: 700;
+            min-height: 60px;
+            margin-bottom: 15px;
+        }
+
+        .probability-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .probability-label {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .probability-value {
+            color: var(--green);
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 5px;
+            background: #29302a;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--green);
+            border-radius: 10px;
+        }
+
+        .market-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .yes-button,
+        .no-button {
+            padding: 11px 5px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .yes-button {
+            background: #b6ff65;
+            color: #10150d;
+        }
+
+        .no-button {
+            background: #29201f;
+            color: #ff7777;
+            border: 1px solid #49302e;
+        }
+
+        /* MODAL */
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 390px;
+            background: #121713;
+            border: 1px solid #303a32;
+            border-radius: 20px;
+            padding: 23px;
+        }
+
+        .modal h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .modal-description {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-choice {
+            color: var(--green);
+            font-weight: 800;
+        }
+
+        .amount-label {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 9px;
+        }
+
+        .amount-input {
+            width: 100%;
+            background: #080b09;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        .amount-input:focus {
+            border-color: var(--green);
+        }
+
+        .confirm-button {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            background: var(--green);
+            color: #10150d;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .close-button {
+            width: 100%;
+            padding: 13px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        /* FOOTER */
+
+        .footer {
+            text-align: center;
+            color: #68716a;
+            font-size: 10px;
+            line-height: 1.7;
+            padding: 35px 10px;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 520px) {
+            .container {
+                padding: 16px;
+            }
+
+            .markets-grid {
+                gap: 10px;
+            }
+
+            .market-image {
+                height: 115px;
+            }
+
+            .card-content {
+                padding: 11px;
+            }
+
+            .market-question {
+                font-size: 12px;
+                min-height: 65px;
+            }
+
+            .yes-button,
+            .no-button {
+                font-size: 10px;
+            }
+
+            .stat-value {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 350px) {
+            .markets-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+
+    <header class="header">
+        <div class="logo">VANTAGE<span>.</span></div>
+        <button class="wallet-button" id="walletButton">
+            Подключить кошелёк
+        </button>
+    </header>
+
+    <!-- INTRO -->
+
+    <section class="intro">
+        <div class="intro-label">PREDICTION MARKETS</div>
+
+        <h1>
+            Будущее имеет <span>цену.</span>
+        </h1>
+
+        <p>
+            Исследуй события, оценивай вероятность и следи за тем,
+            как меняются прогнозы сообщества.
+        </p>
+    </section>
+
+    <!-- STATS -->
+
+    <section class="stats">
+        <div class="stat-card">
+            <div class="stat-label">Активные рынки</div>
+            <div class="stat-value">1,248</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Общий объём</div>
+            <div class="stat-value green">$8.4M</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Пользователи</div>
+            <div class="stat-value">24.8K</div>
+        </div>
+    </section>
+
+    <!-- MARKETS -->
+
+    <div class="section-header">
+        <h2>Популярные рынки</h2>
+        <span>DEMO MARKETS</span>
+    </div>
+
+    <!-- FILTERS -->
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">Все</button>
+        <button class="filter-btn" data-filter="crypto">Крипто</button>
+        <button class="filter-btn" data-filter="politics">Политика</button>
+        <button class="filter-btn" data-filter="tech">Технологии</button>
+        <button class="filter-btn" data-filter="business">Бизнес</button>
+    </div>
+
+    <!-- MARKET CARDS -->
+
+    <main class="markets-grid" id="marketsGrid">
+
+        <!-- MARKET 1 -->
+
+        <article class="market-card" data-category="crypto">
+            <img
+                class="market-image"
+                src="https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=700&auto=format&fit=crop"
+                alt="Bitcoin"
+            >
+
+            <div class="card-content">
+                <span class="category">Crypto</span>
+
+                <h3 class="market-question">
+                    Bitcoin достигнет $150,000 до конца 2026 года?
+                </h3>
+
+                <div class="probability-row">
+                    <span class="probability-label">Вероятность YES</span>
+                    <span class="probability-value">68%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 68%"></div>
+                </div>
+
+                <div class="market-actions">
+                    <button class="yes-button" data-question="Bitcoin достигнет $150,000?" data-choice="YES">
+                        Да · 68%
+                    </button>
+
+                    <button class="no-button" data-question="Bitcoin достигнет $150,000?" data-choice="NO">
+                        Нет · 32%
+                    </button>
+                </div>
+            </div>
+        </article>
+
+        <!-- MARKET 2 -->
+
+        <article class="market-card" data-category="tech">
+            <img
+                class="market-image"
+                src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=700&auto=format&fit=crop"
+                alt="Artificial Intelligence"
+            >
+
+            <div class="card-content">
+                <span class="category">Technologies</span>
+
+                <h3 class="market-question">
+                    Станет ли искусственный интеллект главным трендом 2027 года?
+                </h3>
+
+                <div class="probability-row">
+                    <span class="probability-label">Вероятность YES</span>
+                    <span class="probability-value">91%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 91%"></div>
+                </div>
+
+                <div class="market-actions">
+                    <button class="yes-button" data-question="ИИ станет главным трендом 2027 года?" data-choice="YES">
+                        Да · 91%
+                    </button>
+
+                    <button class="no-button" data-question="ИИ станет главным трендом 2027 года?" data-choice="NO">
+                        Нет · 9%
+                    </button>
+                </div>
+            </div>
+        </article>
+
+        <!-- MARKET 3 -->
+
+        <article class="market-card" data-category="politics">
+            <img
+                class="market-image"
+                src="https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=700&auto=format&fit=crop"
+                alt="Politics"
+            >
+
+            <div class="card-content">
+                <span class="category">Politics</span>
+
+                <h3 class="market-question">
+                    Будет ли подписано новое международное соглашение до конца года?
+                </h3>
+
+                <div class="probability-row">
+                    <span class="probability-label">Вероятность YES</span>
+                    <span class="probability-value">42%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 42%"></div>
+                </div>
+
+                <div class="market-actions">
+                    <button class="yes-button" data-question="Новое международное соглашение?" data-choice="YES">
+                        Да · 42%
+                    </button>
+
+                    <button class="no-button" data-question="Новое международное соглашение?" data-choice="NO">
+                        Нет · 58%
+                    </button>
+                </div>
+            </div>
+        </article>
+
+        <!-- ВТОРАЯ ЧАСТЬ НАЧНЁТСЯ ЗДЕСЬ -->
+                            
+        <!-- MARKET 4 -->
+
+        <article class="market-card" data-category="business">
+            <img
+                class="market-image"
+                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=700&auto=format&fit=crop"
+                alt="Business"
+            >
+
+            <div class="card-content">
+                <span class="category">Business</span>
+
+                <h3 class="market-question">
+                    Вырастет ли индекс S&P 500 до нового максимума в 2026 году?
+                </h3>
+
+                <div class="probability-row">
+                    <span class="probability-label">Вероятность YES</span>
+                    <span class="probability-value">74%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 74%"></div>
+                </div>
+
+                <div class="market-actions">
+                    <button class="yes-button" data-question="S&P 500 достигнет нового максимума?" data-choice="YES">
+                        Да · 74%
+                    </button>
+
+                    <button class="no-button" data-question="S&P 500 достигнет нового максимума?" data-choice="NO">
+                        Нет · 26%
+                    </button>
+                </div>
+            </div>
+        </article>
+
+        <!-- MARKET 5 -->
+
+        <article class="market-card" data-category="crypto">
+            <img
+                class="market-image"
+                src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=700&auto=format&fit=crop"
+                alt="Cryptocurrency"
+            >
+
+            <div class="card-content">
+                <span class="category">Crypto</span>
+
+                <h3 class="market-question">
+                    Ethereum превысит $5,000 до конца 2026 года?
+                </h3>
+
+                <div class="probability-row">
+                    <span class="probability-label">Вероятность YES</span>
+                    <span class="probability-value">56%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 56%"></div>
+                </div>
+
+                <div class="market-actions">
+                    <button class="yes-button" data-question="Ethereum превысит $5,000?" data-choice="YES">
+                        Да · 56%
+                    </button>
+
+                    <button class="no-button" data-question="Ethereum превысит $5,000?" data-choice="NO">
+                        Нет · 44%
+                    </button>
+                </div>
+            </div>
+        </article>
+
+        <!-- MARKET 6 -->
+
+        <article class="market-card" data-category="tech">
+            <img
+                class="market-image"
+                src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=700&auto=format&fit=crop"
+                alt="Technology"
+            >
+
+            <div class="card-content">
+                <span class="category">Technologies</span>
+
+                <h3 class="market-question">
+                    Станут ли новые технологии главным фактором роста экономики?
+                </h3>
+
+                <div class="probability-row">
+                    <span class="probability-label">Вероятность YES</span>
+                    <span class="probability-value">82%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 82%"></div>
+                </div>
+
+                <div class="market-actions">
+                    <button class="yes-button" data-question="Новые технологии станут главным фактором роста экономики?" data-choice="YES">
+                        Да · 82%
+                    </button>
+
+                    <button class="no-button" data-question="Новые технологии станут главным фактором роста экономики?" data-choice="NO">
+                        Нет · 18%
+                    </button>
+                </div>
+            </div>
+        </article>
+
+    </main>
+
+    <!-- FOOTER -->
+
+    <footer class="footer">
+        VANTAGE — PREDICTION MARKETS<br>
+        Демонстрационный интерфейс. Вероятности условные.
+    </footer>
+
+</div>
+
+<!-- MODAL -->
+
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h2>Выбор позиции</h2>
+
+        <p class="modal-description" id="modalQuestion">
+            Выбранный рынок
+        </p>
+
+        <p class="modal-description">
+            Ваш выбор:
+            <span class="modal-choice" id="modalChoice">YES</span>
+        </p>
+
+        <label class="amount-label" for="amountInput">
+            Сумма для демонстрации
+        </label>
+
+        <input
+            class="amount-input"
+            id="amountInput"
+            type="number"
+            min="1"
+            placeholder="Например, 10"
+        >
+
+        <button class="confirm-button" id="confirmButton">
+            Подтвердить демо-выбор
+        </button>
+
+        <button class="close-button" id="closeButton">
+            Отмена
+        </button>
+    </div>
+</div>
+
+<!-- JAVASCRIPT -->
+
+<script>
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+
+    let selectedQuestion = "";
+    let selectedChoice = "";
+
+    const modal = document.getElementById("modal");
+    const modalQuestion = document.getElementById("modalQuestion");
+    const modalChoice = document.getElementById("modalChoice");
+    const amountInput = document.getElementById("amountInput");
+
+    // FILTERS
+
+    const filterButtons = document.querySelectorAll(".filter-btn");
+    const marketCards = document.querySelectorAll(".market-card");
+
+    filterButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            filterButtons.forEach(item => {
+                item.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            const filter = button.dataset.filter;
+
+            marketCards.forEach(card => {
+                if (
+                    filter === "all" ||
+                    card.dataset.category === filter
+                ) {
+                    card.style.display = "";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        });
+    });
+
+    // OPEN MODAL
+
+    document.querySelectorAll(".yes-button, .no-button").forEach(button => {
+        button.addEventListener("click", () => {
+            selectedQuestion = button.dataset.question;
+            selectedChoice = button.dataset.choice;
+
+            modalQuestion.textContent = selectedQuestion;
+            modalChoice.textContent = selectedChoice;
+
+            amountInput.value = "";
+            modal.classList.add("show");
+
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred("light");
+            }
+        });
+    });
+
+    // CLOSE MODAL
+
+    function closeModal() {
+        modal.classList.remove("show");
+    }
+
+    document.getElementById("closeButton").addEventListener("click", closeModal);
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    // DEMO CONFIRMATION
+
+    document.getElementById("confirmButton").addEventListener("click", () => {
+        const amount = Number(amountInput.value);
+
+        if (!amount || amount <= 0) {
+            alert("Введите корректную сумму");
+            return;
+        }
+
+        alert(
+            "Демо-выбор сохранён!\n\n" +
+            "Рынок: " + selectedQuestion + "\n" +
+            "Позиция: " + selectedChoice + "\n" +
+            "Сумма: " + amount
+        );
+
+        closeModal();
+
+        if (tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred("success");
+        }
+    });
+
+    // WALLET BUTTON
+
+    document.getElementById("walletButton").addEventListener("click", () => {
+        alert("Подключение кошелька пока не реализовано.");
+    });
+
+    // PROGRESS ANIMATION
+
+    window.addEventListener("load", () => {
+        document.querySelectorAll(".progress-fill").forEach(bar => {
+            const width = bar.style.width;
+
+            bar.style.width = "0";
+
+            setTimeout(() => {
+                bar.style.transition = "width 1s ease";
+                bar.style.width = width;
+            }, 100);
+        });
+    });
+</script>
+
+</body>
+</html>
